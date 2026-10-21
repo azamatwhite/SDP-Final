@@ -2,10 +2,6 @@ package com.rental.domain;
 
 import java.math.BigDecimal;
 
-/**
- * Pattern Role: Concrete Product.
- * Represents an electric/kick scooter in the rental service.
- */
 public class Scooter extends Vehicle {
 
     public Scooter(String id,

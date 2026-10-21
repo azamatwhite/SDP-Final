@@ -5,10 +5,6 @@ import com.rental.domain.VehicleType;
 
 import java.math.BigDecimal;
 
-/**
- * Pattern Role: Concrete Creator.
- * Creates Motorcycle products using the VehicleBuilder.
- */
 public class MotorcycleFactory extends VehicleFactory {
 
     @Override

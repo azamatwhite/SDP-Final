@@ -5,10 +5,6 @@ import com.rental.creation.VehicleBuilder;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-/**
- * Pattern Role: Product (Abstract Product in Factory Method & Target Product in Builder).
- * Base abstract class representing any rental vehicle in the system.
- */
 public abstract class Vehicle {
 
     private final String id;
@@ -38,11 +34,6 @@ public abstract class Vehicle {
         this.available = available;
     }
 
-    /**
-     * Entry point to the fluent Builder pattern for creating vehicles.
-     *
-     * @return a new VehicleBuilder instance
-     */
     public static VehicleBuilder builder() {
         return new VehicleBuilder();
     }

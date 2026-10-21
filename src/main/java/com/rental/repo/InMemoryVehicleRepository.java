@@ -11,9 +11,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/**
- * Thread-safe in-memory implementation of VehicleRepository using ConcurrentHashMap.
- */
 public class InMemoryVehicleRepository implements VehicleRepository {
 
     private final ConcurrentMap<String, Vehicle> storage = new ConcurrentHashMap<>();
@@ -43,34 +40,23 @@ public class InMemoryVehicleRepository implements VehicleRepository {
         return vehicle;
     }
 
-    /**
-     * Seeds the repository with 8 distinct vehicles across all vehicle categories using factories.
-     */
     public void initSeedData() {
         initSeedData(new VehicleFactoryRegistry());
     }
 
-    /**
-     * Seeds the repository using the provided factory registry.
-     *
-     * @param registry the factory registry used to produce seed vehicles
-     */
     public void initSeedData(VehicleFactoryRegistry registry) {
         if (registry == null) {
             throw new IllegalArgumentException("VehicleFactoryRegistry must not be null");
         }
 
-        // 4 Cars
         save(registry.create(VehicleType.CAR, "Toyota", "Camry", 5, "Petrol", new BigDecimal("50.00")));
         save(registry.create(VehicleType.CAR, "Tesla", "Model 3", 5, "Electric", new BigDecimal("85.00")));
         save(registry.create(VehicleType.CAR, "Hyundai", "Tucson", 5, "Hybrid", new BigDecimal("65.00")));
         save(registry.create(VehicleType.CAR, "BMW", "3 Series", 5, "Petrol", new BigDecimal("95.00")));
 
-        // 2 Motorcycles
         save(registry.create(VehicleType.MOTORCYCLE, "Yamaha", "MT-07", 2, "Petrol", new BigDecimal("40.00")));
         save(registry.create(VehicleType.MOTORCYCLE, "Honda", "CB500F", 2, "Petrol", new BigDecimal("35.00")));
 
-        // 2 Scooters
         save(registry.create(VehicleType.SCOOTER, "Vespa", "Primavera", 2, "Petrol", new BigDecimal("25.00")));
         save(registry.create(VehicleType.SCOOTER, "Xiaomi", "Electric Scooter 4 Pro", 1, "Electric", new BigDecimal("15.00")));
     }

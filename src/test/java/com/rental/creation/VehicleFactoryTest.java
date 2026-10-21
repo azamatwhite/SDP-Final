@@ -95,14 +95,6 @@ class VehicleFactoryTest {
     @DisplayName("Registry should throw IllegalArgumentException when requesting unknown type")
     void registryShouldThrowOnUnknownType() {
         VehicleFactoryRegistry customRegistry = new VehicleFactoryRegistry();
-        // Create an empty registry via sub-type or overwrite
-        VehicleFactoryRegistry emptyRegistry = new VehicleFactoryRegistry() {
-            {
-                // cleared
-                getRegisteredFactories();
-            }
-        };
-
         assertThrows(IllegalArgumentException.class, () ->
                 customRegistry.getFactory(null)
         );

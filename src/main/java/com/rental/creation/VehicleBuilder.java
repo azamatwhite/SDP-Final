@@ -9,10 +9,6 @@ import com.rental.domain.VehicleType;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-/**
- * Pattern Role: Builder.
- * Provides a fluent interface to construct Vehicle instances with validation.
- */
 public class VehicleBuilder {
 
     private String id;
@@ -64,12 +60,6 @@ public class VehicleBuilder {
         return this;
     }
 
-    /**
-     * Validates input parameters and builds the corresponding Vehicle concrete product.
-     *
-     * @return a validated Vehicle subclass instance
-     * @throws IllegalArgumentException if required fields are missing or invalid
-     */
     public Vehicle build() {
         if (type == null) {
             throw new IllegalArgumentException("Vehicle type must not be null");
