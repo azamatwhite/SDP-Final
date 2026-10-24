@@ -1,0 +1,35 @@
+@startuml
+actor User
+participant "Web Controller" as Controller
+participant RentalFacade as Facade
+participant "Vehicle Repository" as Vehicles
+participant Vehicle as VehicleEntity
+participant PricingStrategy as Pricing
+participant "LegacyPaymentAdapter (PaymentGateway)" as PaymentAdapter
+participant LegacyPaymentProcessor as LegacyPayment
+participant "Reservation Repository" as Reservations
+participant "EmailClientAdapter (NotificationService)" as NotificationAdapter
+participant LegacyEmailClient as LegacyEmail
+
+User -> Controller: POST /api/checkout
+Controller -> Facade: checkout(vehicleId, days, customer, email)
+Facade -> Vehicles: findById(vehicleId)
+Vehicles --> Facade: vehicle and availability
+Facade -> VehicleEntity: check available
+VehicleEntity --> Facade: available
+Facade -> Pricing: calculatePrice(vehicle, days)
+Pricing --> Facade: total price
+Facade -> PaymentAdapter: charge(customerId, total)
+PaymentAdapter -> LegacyPayment: makePayment(token, cents, USD)
+LegacyPayment --> PaymentAdapter: approved
+PaymentAdapter --> Facade: approved
+Facade -> Reservations: save(reservation)
+Reservations --> Facade: saved reservation
+Facade -> VehicleEntity: setAvailable(false)
+Facade -> NotificationAdapter: send(email, confirmation)
+NotificationAdapter -> LegacyEmail: sendEmail(email, subject, body)
+LegacyEmail --> NotificationAdapter: sent
+NotificationAdapter --> Facade: sent
+Facade --> Controller: reservation result
+Controller --> User: booking confirmation
+@enduml

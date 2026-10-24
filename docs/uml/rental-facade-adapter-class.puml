@@ -1,0 +1,28 @@
+@startuml
+class RentalController
+class RentalFacade
+interface VehicleRepository
+interface PricingStrategy
+class DailyRatePricingStrategy
+interface ReservationRepository
+class InMemoryReservationRepository
+interface PaymentGateway
+class LegacyPaymentAdapter
+class LegacyPaymentProcessor
+interface NotificationService
+class EmailClientAdapter
+class LegacyEmailClient
+
+RentalController --> RentalFacade
+RentalFacade --> VehicleRepository
+RentalFacade --> PricingStrategy
+RentalFacade --> PaymentGateway
+RentalFacade --> ReservationRepository
+RentalFacade --> NotificationService
+DailyRatePricingStrategy ..|> PricingStrategy
+InMemoryReservationRepository ..|> ReservationRepository
+LegacyPaymentAdapter ..|> PaymentGateway
+LegacyPaymentAdapter --> LegacyPaymentProcessor
+EmailClientAdapter ..|> NotificationService
+EmailClientAdapter --> LegacyEmailClient
+@enduml
