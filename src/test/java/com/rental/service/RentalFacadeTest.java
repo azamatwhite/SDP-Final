@@ -4,12 +4,14 @@ import com.rental.domain.Car;
 import com.rental.domain.Vehicle;
 import com.rental.notification.NotificationService;
 import com.rental.payment.PaymentGateway;
+import com.rental.pricing.DailyPricing;
+import com.rental.pricing.QuoteService;
+import com.rental.pricing.WeeklyDiscountPricing;
 import com.rental.repo.InMemoryVehicleRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,7 +30,8 @@ class RentalFacadeTest {
         reservationRepository = new InMemoryReservationRepository();
         paymentGateway = new RecordingPaymentGateway(true);
         notificationService = new RecordingNotificationService();
-        rentalFacade = new RentalFacade(vehicleRepository, new DailyRatePricingStrategy(),
+        rentalFacade = new RentalFacade(vehicleRepository,
+                new QuoteService(new DailyPricing(), new WeeklyDiscountPricing()),
                 paymentGateway, reservationRepository, notificationService);
         vehicle = new Car("car-1", "Toyota", "Camry", 5, "Petrol",
                 new BigDecimal("50.00"), true);
@@ -38,6 +41,14 @@ class RentalFacadeTest {
     @Test
     void quoteUsesVehicleDailyRateAndRentalDuration() {
         assertEquals(new BigDecimal("150.00"), rentalFacade.quote("car-1", 3));
+    }
+
+    @Test
+    void weeklyDiscountAndExtrasAreApplied() {
+        // 50 * 7 = 350 -> 15% off = 297.50 -> + GPS 50.00 = 347.50 -> + insurance 10% = 382.25
+        BigDecimal total = RentalFacade.price(rentalFacade.buildQuote(
+                "car-1", 7, "WEEKLY_DISCOUNT", List.of("GPS", "INSURANCE")));
+        assertEquals(new BigDecimal("382.25"), total);
     }
 
     @Test
@@ -79,6 +90,16 @@ class RentalFacadeTest {
     @Test
     void invalidRentalDurationIsRejected() {
         assertThrows(IllegalArgumentException.class, () -> rentalFacade.quote("car-1", 0));
+    }
+
+    @Test
+    void cancelMakesVehicleAvailableAgain() {
+        Reservation r = rentalFacade.checkout("car-1", 2, "customer-1", "renter@example.com");
+        rentalFacade.cancel(r.getId());
+
+        assertTrue(vehicle.isAvailable());
+        assertEquals(ReservationStatus.CANCELLED, reservationRepository.findAll().get(0).getStatus());
+        assertThrows(IllegalStateException.class, () -> rentalFacade.cancel(r.getId()));
     }
 
     private static class RecordingPaymentGateway implements PaymentGateway {

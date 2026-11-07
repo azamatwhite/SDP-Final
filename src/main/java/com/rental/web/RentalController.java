@@ -1,25 +1,33 @@
 package com.rental.web;
 
+import com.google.gson.Gson;
 import com.rental.creation.VehicleFactoryRegistry;
 import com.rental.domain.Vehicle;
 import com.rental.domain.VehicleType;
+import com.rental.pricing.Quote;
 import com.rental.repo.VehicleRepository;
 import com.rental.service.PaymentFailedException;
 import com.rental.service.RentalFacade;
 import com.rental.service.Reservation;
+import com.rental.service.ReservationNotFoundException;
 import com.rental.service.VehicleNotFoundException;
 import com.rental.service.VehicleUnavailableException;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.math.BigDecimal;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RentalController implements HttpHandler {
+    private final Gson gson = new Gson();
     private final RentalFacade rentalFacade;
     private final VehicleFactoryRegistry vehicleFactoryRegistry;
     private final VehicleRepository vehicleRepository;
@@ -36,45 +44,85 @@ public class RentalController implements HttpHandler {
         try {
             String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod();
+            String[] seg = path.split("/"); // ["", "api", "reservations", "{id}", "cancel"]
 
             if ("GET".equals(method) && "/api/vehicles".equals(path)) {
-                send(exchange, 200, "application/json", vehiclesJson(rentalFacade.getAvailableVehicles()));
-            } else if ("POST".equals(method) && "/api/quote".equals(path)) {
-                Map<String, String> form = readForm(exchange);
-                BigDecimal total = rentalFacade.quote(required(form, "vehicleId"),
-                        Integer.parseInt(required(form, "rentalDays")));
-                send(exchange, 200, "application/json", "{\"totalPrice\":\"" + total.toPlainString() + "\"}");
-            } else if ("POST".equals(method) && "/api/checkout".equals(path)) {
-                Map<String, String> form = readForm(exchange);
-                Reservation reservation = rentalFacade.checkout(required(form, "vehicleId"),
-                        Integer.parseInt(required(form, "rentalDays")),
-                        required(form, "customerId"), required(form, "email"));
-                send(exchange, 201, "application/json", reservationJson(reservation));
+                send(exchange, 200, gson.toJson(rentalFacade.getAllVehicles()));
             } else if ("POST".equals(method) && "/api/vehicles".equals(path)) {
                 Vehicle vehicle = vehicleRepository.save(createVehicle(readForm(exchange)));
-                send(exchange, 201, "application/json", vehicleJson(vehicle));
+                send(exchange, 201, gson.toJson(vehicle));
+            } else if ("POST".equals(method) && "/api/quote".equals(path)) {
+                Map<String, String> form = readForm(exchange);
+                Quote quote = rentalFacade.buildQuote(required(form, "vehicleId"),
+                        Integer.parseInt(required(form, "rentalDays")),
+                        form.get("pricing"), extras(form));
+                Map<String, Object> body = new LinkedHashMap<>();
+                body.put("totalPrice", RentalFacade.price(quote));
+                body.put("lines", quote.lines());
+                send(exchange, 200, gson.toJson(body));
+            } else if ("POST".equals(method) && "/api/checkout".equals(path)) {
+                Map<String, String> form = readForm(exchange);
+                Reservation r = rentalFacade.checkout(required(form, "vehicleId"),
+                        Integer.parseInt(required(form, "rentalDays")),
+                        required(form, "customerId"), required(form, "email"),
+                        form.get("pricing"), extras(form));
+                send(exchange, 201, gson.toJson(view(r)));
+            } else if ("GET".equals(method) && "/api/reservations".equals(path)) {
+                List<Map<String, Object>> list = new ArrayList<>();
+                for (Reservation r : rentalFacade.getReservations()) {
+                    list.add(view(r));
+                }
+                send(exchange, 200, gson.toJson(list));
+            } else if ("POST".equals(method) && seg.length == 5 && "reservations".equals(seg[2])
+                    && "cancel".equals(seg[4])) {
+                send(exchange, 200, gson.toJson(view(rentalFacade.cancel(seg[3]))));
+            } else if ("POST".equals(method) && seg.length == 5 && "reservations".equals(seg[2])
+                    && "complete".equals(seg[4])) {
+                send(exchange, 200, gson.toJson(view(rentalFacade.complete(seg[3]))));
             } else {
-                send(exchange, 404, "application/json", "{\"error\":\"Route not found\"}");
+                send(exchange, 404, errorJson("Route not found"));
             }
-        } catch (PaymentFailedException exception) {
-            send(exchange, 402, "application/json", errorJson(exception.getMessage()));
-        } catch (VehicleUnavailableException exception) {
-            send(exchange, 409, "application/json", errorJson(exception.getMessage()));
-        } catch (VehicleNotFoundException exception) {
-            send(exchange, 404, "application/json", errorJson(exception.getMessage()));
-        } catch (IllegalArgumentException exception) {
-            send(exchange, 400, "application/json", errorJson(exception.getMessage()));
+        } catch (PaymentFailedException e) {
+            send(exchange, 402, errorJson(e.getMessage()));
+        } catch (VehicleUnavailableException e) {
+            send(exchange, 409, errorJson(e.getMessage()));
+        } catch (VehicleNotFoundException | ReservationNotFoundException e) {
+            send(exchange, 404, errorJson(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            send(exchange, 400, errorJson(e.getMessage()));
+        } catch (IllegalStateException e) {
+            send(exchange, 409, errorJson(e.getMessage()));
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            send(exchange, 500, errorJson("Internal server error"));
         }
+    }
+
+    // The payment token (customerId) is intentionally not exposed.
+    private Map<String, Object> view(Reservation r) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", r.getId());
+        m.put("vehicleId", r.getVehicleId());
+        m.put("email", r.getEmail());
+        m.put("rentalDays", r.getRentalDays());
+        m.put("totalPrice", r.getTotalPrice());
+        m.put("status", r.getStatus().name());
+        return m;
+    }
+
+    private List<String> extras(Map<String, String> form) {
+        String raw = form.getOrDefault("extras", "");
+        return raw.isBlank() ? List.of() : Arrays.asList(raw.split(","));
     }
 
     private Vehicle createVehicle(Map<String, String> form) {
         VehicleType type = VehicleType.valueOf(required(form, "type"));
-        String brand = required(form, "brand");
-        String model = required(form, "model");
-        int seats = Integer.parseInt(required(form, "seats"));
-        String fuel = required(form, "fuel");
-        BigDecimal dailyRate = new BigDecimal(required(form, "dailyRate"));
-        return vehicleFactoryRegistry.create(type, brand, model, seats, fuel, dailyRate);
+        return vehicleFactoryRegistry.create(type,
+                required(form, "brand"),
+                required(form, "model"),
+                Integer.parseInt(required(form, "seats")),
+                required(form, "fuel"),
+                new BigDecimal(required(form, "dailyRate")));
     }
 
     private Map<String, String> readForm(HttpExchange exchange) throws IOException {
@@ -85,9 +133,8 @@ public class RentalController implements HttpHandler {
         }
         for (String pair : body.split("&")) {
             String[] parts = pair.split("=", 2);
-            String key = URLDecoder.decode(parts[0], StandardCharsets.UTF_8);
-            String value = parts.length == 2 ? URLDecoder.decode(parts[1], StandardCharsets.UTF_8) : "";
-            values.put(key, value);
+            values.put(URLDecoder.decode(parts[0], StandardCharsets.UTF_8),
+                    parts.length == 2 ? URLDecoder.decode(parts[1], StandardCharsets.UTF_8) : "");
         }
         return values;
     }
@@ -100,45 +147,13 @@ public class RentalController implements HttpHandler {
         return value;
     }
 
-    private String vehiclesJson(Iterable<Vehicle> vehicles) {
-        StringBuilder json = new StringBuilder("[");
-        boolean first = true;
-        for (Vehicle vehicle : vehicles) {
-            if (!first) {
-                json.append(',');
-            }
-            json.append(vehicleJson(vehicle));
-            first = false;
-        }
-        return json.append(']').toString();
-    }
-
-    private String vehicleJson(Vehicle vehicle) {
-        return "{\"id\":\"" + escape(vehicle.getId()) + "\",\"type\":\"" + vehicle.getType()
-                + "\",\"brand\":\"" + escape(vehicle.getBrand()) + "\",\"model\":\""
-                + escape(vehicle.getModel()) + "\",\"seats\":" + vehicle.getSeats()
-                + ",\"fuel\":\"" + escape(vehicle.getFuel()) + "\",\"dailyRate\":\""
-                + vehicle.getDailyRate().toPlainString() + "\",\"available\":" + vehicle.isAvailable() + "}";
-    }
-
-    private String reservationJson(Reservation reservation) {
-        return "{\"id\":\"" + escape(reservation.getId()) + "\",\"vehicleId\":\""
-                + escape(reservation.getVehicleId()) + "\",\"rentalDays\":" + reservation.getRentalDays()
-                + ",\"totalPrice\":\"" + reservation.getTotalPrice().toPlainString() + "\"}";
-    }
-
     private String errorJson(String message) {
-        return "{\"error\":\"" + escape(message) + "\"}";
+        return gson.toJson(Map.of("error", message == null ? "Error" : message));
     }
 
-    private String escape(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"")
-                .replace("\n", "\\n").replace("\r", "\\r");
-    }
-
-    private void send(HttpExchange exchange, int status, String contentType, String body) throws IOException {
+    private void send(HttpExchange exchange, int status, String body) throws IOException {
         byte[] response = body.getBytes(StandardCharsets.UTF_8);
-        exchange.getResponseHeaders().set("Content-Type", contentType + "; charset=UTF-8");
+        exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         exchange.sendResponseHeaders(status, response.length);
         exchange.getResponseBody().write(response);
         exchange.close();
