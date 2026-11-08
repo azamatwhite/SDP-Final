@@ -2,6 +2,7 @@ package com.rental.pricing;
 
 import com.rental.domain.Vehicle;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class WeeklyDiscountPricing implements PricingStrategy {
     @Override
@@ -13,9 +14,9 @@ public class WeeklyDiscountPricing implements PricingStrategy {
     public BigDecimal basePrice(Vehicle vehicle, int days) {
         BigDecimal total = vehicle.getDailyRate().multiply(BigDecimal.valueOf(days));
         if (days >= 7) {
-            // Скидка 15% при аренде от 7 дней
-            total = total.multiply(BigDecimal.valueOf(0.85));
+            // 15% discount for rentals of 7+ days
+            total = total.multiply(new BigDecimal("0.85"));
         }
-        return total;
+        return total.setScale(2, RoundingMode.HALF_UP);
     }
 }

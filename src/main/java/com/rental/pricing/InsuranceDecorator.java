@@ -1,6 +1,7 @@
 package com.rental.pricing;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 public class InsuranceDecorator extends QuoteDecorator {
@@ -10,9 +11,9 @@ public class InsuranceDecorator extends QuoteDecorator {
 
     @Override
     public BigDecimal total() {
-        BigDecimal currentTotal = super.total();
-        BigDecimal insuranceCost = currentTotal.multiply(BigDecimal.valueOf(0.10));
-        return currentTotal.add(insuranceCost);
+        BigDecimal current = super.total();
+        return current.add(current.multiply(new BigDecimal("0.10")))
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     @Override
