@@ -2,6 +2,7 @@ package com.rental.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -20,5 +21,10 @@ public class InMemoryReservationRepository implements ReservationRepository {
     @Override
     public List<Reservation> findAll() {
         return new ArrayList<>(reservations.values());
+    }
+
+    @Override
+    public Optional<Reservation> findById(String id) {
+        return id == null ? Optional.empty() : Optional.ofNullable(reservations.get(id));
     }
 }
