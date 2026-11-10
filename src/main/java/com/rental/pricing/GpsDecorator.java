@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public class GpsDecorator extends QuoteDecorator {
-    private static final BigDecimal GPS_PRICE = BigDecimal.valueOf(50.00);
+    private static final BigDecimal GPS_PRICE = new BigDecimal("3000.00");
 
     public GpsDecorator(Quote wrapped) {
         super(wrapped);

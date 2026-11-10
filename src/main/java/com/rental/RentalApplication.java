@@ -5,8 +5,11 @@ import com.rental.notification.EmailClientAdapter;
 import com.rental.notification.LegacyEmailClient;
 import com.rental.payment.LegacyPaymentAdapter;
 import com.rental.payment.LegacyPaymentProcessor;
+import com.rental.pricing.CorporatePricing;
 import com.rental.pricing.DailyPricing;
+import com.rental.pricing.MonthlySubscriptionPricing;
 import com.rental.pricing.QuoteService;
+import com.rental.pricing.StudentPricing;
 import com.rental.pricing.WeeklyDiscountPricing;
 import com.rental.repo.Database;
 import com.rental.repo.JdbcReservationRepository;
@@ -29,7 +32,8 @@ public class RentalApplication {
 
         RentalFacade rentalFacade = new RentalFacade(
                 vehicleRepository,
-                new QuoteService(new DailyPricing(), new WeeklyDiscountPricing()),
+                new QuoteService(new DailyPricing(), new WeeklyDiscountPricing(),
+                        new MonthlySubscriptionPricing(), new CorporatePricing(), new StudentPricing()),
                 new LegacyPaymentAdapter(new LegacyPaymentProcessor()),
                 new JdbcReservationRepository(db),
                 new EmailClientAdapter(new LegacyEmailClient()));
