@@ -7,7 +7,6 @@ import com.rental.domain.Scooter;
 import com.rental.domain.Vehicle;
 import com.rental.domain.VehicleType;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -16,7 +15,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("InMemoryVehicleRepository Tests")
 class VehicleRepositoryTest {
 
     private InMemoryVehicleRepository repository;
@@ -29,7 +27,6 @@ class VehicleRepositoryTest {
     }
 
     @Test
-    @DisplayName("Should successfully save and retrieve a vehicle by ID")
     void shouldSaveAndFindById() {
         Vehicle car = registry.create(VehicleType.CAR, "Honda", "Civic", 5, "Petrol", new BigDecimal("45.00"));
 
@@ -44,7 +41,6 @@ class VehicleRepositoryTest {
     }
 
     @Test
-    @DisplayName("Should return empty Optional when ID does not exist")
     void shouldReturnEmptyForNonExistentId() {
         Optional<Vehicle> found = repository.findById("non-existent-id");
         assertFalse(found.isPresent());
@@ -54,20 +50,19 @@ class VehicleRepositoryTest {
     }
 
     @Test
-    @DisplayName("Should initialize seed data containing 8 vehicles across categories")
     void shouldInitializeSeedDataWithEightVehicles() {
         repository.initSeedData();
 
         List<Vehicle> allVehicles = repository.findAll();
-        assertEquals(8, allVehicles.size(), "Seed data must contain exactly 8 vehicles");
+        assertEquals(8, allVehicles.size());
 
         long carsCount = allVehicles.stream().filter(v -> v instanceof Car).count();
         long motosCount = allVehicles.stream().filter(v -> v instanceof Motorcycle).count();
         long scootersCount = allVehicles.stream().filter(v -> v instanceof Scooter).count();
 
-        assertEquals(4, carsCount, "Seed data should contain 4 cars");
-        assertEquals(2, motosCount, "Seed data should contain 2 motorcycles");
-        assertEquals(2, scootersCount, "Seed data should contain 2 scooters");
+        assertEquals(4, carsCount);
+        assertEquals(2, motosCount);
+        assertEquals(2, scootersCount);
 
         allVehicles.forEach(vehicle -> {
             assertNotNull(vehicle.getId());
@@ -80,7 +75,6 @@ class VehicleRepositoryTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when saving null vehicle")
     void shouldThrowWhenSavingNull() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
                 repository.save(null)

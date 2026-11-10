@@ -1,6 +1,5 @@
 package com.rental.notification;
 
-// Object Adapter: converts a standard notification into the legacy email client's call.
 public class EmailClientAdapter implements NotificationService {
     private final LegacyEmailClient legacyEmailClient;
 

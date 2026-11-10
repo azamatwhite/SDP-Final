@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// Connects Strategy (base price) with Decorator (extras).
 public class QuoteService {
     private final Map<String, PricingStrategy> strategies = new LinkedHashMap<>();
 
@@ -54,11 +53,9 @@ public class QuoteService {
         if (promoOrCode != null && !promoOrCode.isBlank()) {
             String p = promoOrCode.trim().toUpperCase();
             if (p.equals("ASTANA-IT") || p.equals("AITU") || p.equals("STUDENT_AITU")) {
-                // If 30+ days, monthly subscription discount (30%) is better than student discount (20%)
                 return isMonthly ? "MONTHLY" : "STUDENT_AITU";
             }
             if (p.equals("CORP10") || p.equals("CORPORATE")) {
-                // Corporate is 10%. If 30+ days (30%) or 7+ days (15%), duration discount is better
                 if (isMonthly) return "MONTHLY";
                 if (isWeekly) return "WEEKLY_DISCOUNT";
                 return "CORPORATE";
@@ -73,7 +70,6 @@ public class QuoteService {
                 return "DAILY";
             }
         }
-        // Auto-resolve by duration if no promo code or explicit code given
         if (isMonthly) {
             return "MONTHLY";
         }

@@ -45,7 +45,7 @@ public class RentalController implements HttpHandler {
         try {
             String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod();
-            String[] seg = path.split("/"); // ["", "api", "reservations", "{id}", "cancel"]
+            String[] seg = path.split("/");
 
             if ("GET".equals(method) && "/api/vehicles".equals(path)) {
                 Map<String, String> queryParams = parseQuery(exchange.getRequestURI().getQuery());
@@ -169,7 +169,6 @@ public class RentalController implements HttpHandler {
         }
     }
 
-    // The payment token (customerId) is intentionally not exposed.
     private Map<String, Object> view(Reservation r) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", r.getId());

@@ -14,7 +14,6 @@ public class StudentPricing implements PricingStrategy {
     @Override
     public BigDecimal basePrice(Vehicle vehicle, int days) {
         BigDecimal total = vehicle.getDailyRate().multiply(BigDecimal.valueOf(days));
-        // 20% discount for Astana IT University (AITU) students
         return total.multiply(new BigDecimal("0.80")).setScale(2, RoundingMode.HALF_UP);
     }
 }

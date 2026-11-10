@@ -14,7 +14,6 @@ public class WeeklyDiscountPricing implements PricingStrategy {
     public BigDecimal basePrice(Vehicle vehicle, int days) {
         BigDecimal total = vehicle.getDailyRate().multiply(BigDecimal.valueOf(days));
         if (days >= 7) {
-            // 15% discount for rentals of 7+ days
             total = total.multiply(new BigDecimal("0.85"));
         }
         return total.setScale(2, RoundingMode.HALF_UP);

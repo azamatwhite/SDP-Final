@@ -53,7 +53,6 @@ class RentalFacadeTest {
 
     @Test
     void weeklyDiscountAndExtrasAreApplied() {
-        // 25000 * 7 = 175000 -> 15% off = 148750.00 -> + Child seat 2000.00 = 150750.00 -> + insurance 10% = 165825.00
         BigDecimal total = RentalFacade.price(rentalFacade.buildQuote(
                 "car-1", 7, "WEEKLY_DISCOUNT", List.of("CHILD_SEAT", "INSURANCE")));
         assertEquals(new BigDecimal("165825.00"), total);
@@ -61,7 +60,6 @@ class RentalFacadeTest {
 
     @Test
     void studentPromoCodeAppliesAituTwentyPercentDiscount() {
-        // 25000 * 2 = 50000 -> 20% student discount = 40000.00
         BigDecimal total = RentalFacade.price(rentalFacade.buildQuote(
                 "car-1", 2, "ASTANA-IT", List.of()));
         assertEquals(new BigDecimal("40000.00"), total);
@@ -69,7 +67,6 @@ class RentalFacadeTest {
 
     @Test
     void monthlySubscriptionAppliesThirtyPercentDiscount() {
-        // 25000 * 30 = 750000 -> 30% monthly discount = 525000.00
         BigDecimal total = RentalFacade.price(rentalFacade.buildQuote(
                 "car-1", 30, "MONTHLY", List.of()));
         assertEquals(new BigDecimal("525000.00"), total);
@@ -77,7 +74,6 @@ class RentalFacadeTest {
 
     @Test
     void corporatePromoAppliesTenPercentDiscount() {
-        // 25000 * 3 = 75000 -> 10% corporate discount = 67500.00
         BigDecimal total = RentalFacade.price(rentalFacade.buildQuote(
                 "car-1", 3, "CORP10", List.of()));
         assertEquals(new BigDecimal("67500.00"), total);
@@ -99,7 +95,7 @@ class RentalFacadeTest {
 
         List<Vehicle> sorted = rentalFacade.findVehicles(null, "ALL", "priceAsc");
         assertEquals(2, sorted.size());
-        assertEquals("moto-1", sorted.get(0).getId()); // 18000 < 25000
+        assertEquals("moto-1", sorted.get(0).getId());
     }
 
     @Test
@@ -163,7 +159,6 @@ class RentalFacadeTest {
                 new BigDecimal("15000.00"), true);
         vehicleRepository.save(moto);
 
-        // Child seat is only allowed for cars
         assertThrows(IllegalArgumentException.class,
                 () -> rentalFacade.buildQuote("scooter-1", 1, "DAILY", List.of("CHILD_SEAT")));
         assertThrows(IllegalArgumentException.class,
@@ -172,7 +167,6 @@ class RentalFacadeTest {
 
     @Test
     void bestDiscountSelectedWhenPromoProvidedForLongRental() {
-        // If 30+ days, monthly subscription discount (30%) is better than 20% student discount
         Quote quote = rentalFacade.buildQuote("car-1", 30, "ASTANA-IT", List.of());
         assertEquals(new BigDecimal("525000.00"), RentalFacade.price(quote));
         assertTrue(quote.lines().get(0).startsWith("MONTHLY"));
@@ -184,12 +178,10 @@ class RentalFacadeTest {
                 new BigDecimal("5000.00"), true);
         vehicleRepository.save(scooter);
 
-        // 5000 + 1000 helmet = 6000
         Quote quote = rentalFacade.buildQuote("scooter-2", 1, "DAILY", List.of("HELMET"));
         assertEquals(new BigDecimal("6000.00"), RentalFacade.price(quote));
         assertTrue(quote.lines().stream().anyMatch(l -> l.contains("Protective Helmet")));
 
-        // Helmet cannot be added to a car
         assertThrows(IllegalArgumentException.class,
                 () -> rentalFacade.buildQuote("car-1", 1, "DAILY", List.of("HELMET")));
     }
@@ -200,19 +192,16 @@ class RentalFacadeTest {
         LocalDate currentEnd = LocalDate.of(2026, 11, 13);
         rentalFacade.checkout("car-1", 3, "cust-1", "user@example.com", "DAILY", List.of(), currentStart, currentEnd);
 
-        // Conflicting dates are rejected
         assertFalse(rentalFacade.isVehicleAvailableForDates("car-1",
                 LocalDate.of(2026, 11, 11), LocalDate.of(2026, 11, 14)));
         assertThrows(VehicleUnavailableException.class, () ->
                 rentalFacade.checkout("car-1", 3, "cust-2", "user2@example.com", "DAILY", List.of(),
                         LocalDate.of(2026, 11, 11), LocalDate.of(2026, 11, 14)));
 
-        // Non-conflicting future dates are available!
         LocalDate futureStart = LocalDate.of(2026, 11, 14);
         LocalDate futureEnd = LocalDate.of(2026, 11, 28);
         assertTrue(rentalFacade.isVehicleAvailableForDates("car-1", futureStart, futureEnd));
 
-        // Booking non-conflicting future dates succeeds
         Reservation futureReservation = rentalFacade.checkout("car-1", 14, "cust-2", "user2@example.com",
                 "DAILY", List.of(), futureStart, futureEnd);
         assertNotNull(futureReservation);

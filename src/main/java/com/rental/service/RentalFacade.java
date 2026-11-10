@@ -43,12 +43,10 @@ public class RentalFacade {
     public List<Vehicle> findVehicles(String search, String type, String sort) {
         Stream<Vehicle> stream = vehicleRepository.findAll().stream();
 
-        // 1. Filter by category
         if (type != null && !type.isBlank() && !"ALL".equalsIgnoreCase(type.trim())) {
             stream = stream.filter(v -> v.getType().name().equalsIgnoreCase(type.trim()));
         }
 
-        // 2. Filter by search query (brand or model)
         if (search != null && !search.isBlank()) {
             String q = search.trim().toLowerCase();
             stream = stream.filter(v ->
@@ -56,7 +54,6 @@ public class RentalFacade {
                     (v.getModel() != null && v.getModel().toLowerCase().contains(q)));
         }
 
-        // 3. Sort
         if ("priceAsc".equalsIgnoreCase(sort)) {
             stream = stream.sorted(Comparator.comparing(Vehicle::getDailyRate));
         } else if ("priceDesc".equalsIgnoreCase(sort)) {
@@ -76,7 +73,6 @@ public class RentalFacade {
         }
         Vehicle vehicle = findVehicle(vehicleId);
 
-        // Check if any active reservation overlaps requested date window [start, end)
         for (Reservation r : reservationRepository.findAll()) {
             if (r.getVehicleId().equals(vehicleId) && r.getStatus() == ReservationStatus.ACTIVE) {
                 LocalDate rStart = r.getStartDate() != null ? r.getStartDate() : LocalDate.now();
@@ -87,7 +83,6 @@ public class RentalFacade {
             }
         }
 
-        // If vehicle is marked unavailable, check whether it is due to an active reservation today or manual deactivation
         if (!vehicle.isAvailable()) {
             boolean activeReservationToday = reservationRepository.findAll().stream()
                     .filter(r -> r.getVehicleId().equals(vehicleId) && r.getStatus() == ReservationStatus.ACTIVE)
@@ -125,7 +120,6 @@ public class RentalFacade {
         return checkout(vehicleId, rentalDays, customerId, email, "DAILY", List.of());
     }
 
-    // The Facade coordinates availability, pricing, payment, reservation, and confirmation.
     public Reservation checkout(String vehicleId, int rentalDays, String customerId, String email,
                                 String pricing, Collection<String> extras) {
         return checkout(vehicleId, rentalDays, customerId, email, pricing, extras, null, null);

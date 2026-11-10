@@ -5,7 +5,6 @@ import com.rental.domain.Motorcycle;
 import com.rental.domain.Scooter;
 import com.rental.domain.Vehicle;
 import com.rental.domain.VehicleType;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -14,11 +13,9 @@ import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("VehicleBuilder Tests")
 class VehicleBuilderTest {
 
     @Test
-    @DisplayName("Should successfully build a Car with valid fields")
     void shouldBuildCarSuccessfully() {
         Vehicle vehicle = Vehicle.builder()
                 .type(VehicleType.CAR)
@@ -43,7 +40,6 @@ class VehicleBuilderTest {
     }
 
     @Test
-    @DisplayName("Should successfully build a Motorcycle")
     void shouldBuildMotorcycleSuccessfully() {
         Vehicle vehicle = Vehicle.builder()
                 .type(VehicleType.MOTORCYCLE)
@@ -59,7 +55,6 @@ class VehicleBuilderTest {
     }
 
     @Test
-    @DisplayName("Should successfully build a Scooter")
     void shouldBuildScooterSuccessfully() {
         Vehicle vehicle = Vehicle.builder()
                 .type(VehicleType.SCOOTER)
@@ -75,7 +70,6 @@ class VehicleBuilderTest {
     }
 
     @Test
-    @DisplayName("Should retain custom id and availability if specified")
     void shouldRetainCustomIdAndAvailability() {
         Vehicle vehicle = Vehicle.builder()
                 .id("custom-uuid-123")
@@ -93,7 +87,6 @@ class VehicleBuilderTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when vehicle type is null")
     void shouldThrowWhenTypeIsNull() {
         VehicleBuilder builder = Vehicle.builder()
                 .brand("Tesla")
@@ -107,7 +100,6 @@ class VehicleBuilderTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "   "})
-    @DisplayName("Should throw IllegalArgumentException when brand is blank or empty")
     void shouldThrowWhenBrandIsBlank(String invalidBrand) {
         VehicleBuilder builder = Vehicle.builder()
                 .type(VehicleType.CAR)
@@ -121,7 +113,6 @@ class VehicleBuilderTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when brand is null")
     void shouldThrowWhenBrandIsNull() {
         VehicleBuilder builder = Vehicle.builder()
                 .type(VehicleType.CAR)
@@ -136,7 +127,6 @@ class VehicleBuilderTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "   "})
-    @DisplayName("Should throw IllegalArgumentException when model is blank or empty")
     void shouldThrowWhenModelIsBlank(String invalidModel) {
         VehicleBuilder builder = Vehicle.builder()
                 .type(VehicleType.CAR)
@@ -151,7 +141,6 @@ class VehicleBuilderTest {
 
     @ParameterizedTest
     @ValueSource(ints = {0, -1, -5})
-    @DisplayName("Should throw IllegalArgumentException when seats count is zero or negative")
     void shouldThrowWhenSeatsIsZeroOrNegative(int invalidSeats) {
         VehicleBuilder builder = Vehicle.builder()
                 .type(VehicleType.CAR)
@@ -165,7 +154,6 @@ class VehicleBuilderTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when dailyRate is null")
     void shouldThrowWhenDailyRateIsNull() {
         VehicleBuilder builder = Vehicle.builder()
                 .type(VehicleType.CAR)
@@ -179,7 +167,6 @@ class VehicleBuilderTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when dailyRate is zero")
     void shouldThrowWhenDailyRateIsZero() {
         VehicleBuilder builder = Vehicle.builder()
                 .type(VehicleType.CAR)
@@ -193,7 +180,6 @@ class VehicleBuilderTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when dailyRate is negative")
     void shouldThrowWhenDailyRateIsNegative() {
         VehicleBuilder builder = Vehicle.builder()
                 .type(VehicleType.CAR)

@@ -3,7 +3,6 @@ package com.rental.payment;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-// Object Adapter: converts the application's payment request to the legacy processor API.
 public class LegacyPaymentAdapter implements PaymentGateway {
     private final LegacyPaymentProcessor legacyProcessor;
 
