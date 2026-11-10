@@ -1,6 +1,7 @@
 package com.rental.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public class Reservation {
     private final String id;
@@ -10,6 +11,8 @@ public class Reservation {
     private final int rentalDays;
     private final BigDecimal totalPrice;
     private ReservationStatus status;
+    private final LocalDate startDate;
+    private final LocalDate endDate;
 
     public Reservation(String id, String vehicleId, String customerId, String email,
                        int rentalDays, BigDecimal totalPrice) {
@@ -18,6 +21,13 @@ public class Reservation {
 
     public Reservation(String id, String vehicleId, String customerId, String email,
                        int rentalDays, BigDecimal totalPrice, ReservationStatus status) {
+        this(id, vehicleId, customerId, email, rentalDays, totalPrice, status,
+                LocalDate.now(), LocalDate.now().plusDays(Math.max(1, rentalDays)));
+    }
+
+    public Reservation(String id, String vehicleId, String customerId, String email,
+                       int rentalDays, BigDecimal totalPrice, ReservationStatus status,
+                       LocalDate startDate, LocalDate endDate) {
         this.id = id;
         this.vehicleId = vehicleId;
         this.customerId = customerId;
@@ -25,6 +35,8 @@ public class Reservation {
         this.rentalDays = rentalDays;
         this.totalPrice = totalPrice;
         this.status = status;
+        this.startDate = startDate != null ? startDate : LocalDate.now();
+        this.endDate = endDate != null ? endDate : this.startDate.plusDays(Math.max(1, rentalDays));
     }
 
     public String getId() {
@@ -57,5 +69,13 @@ public class Reservation {
 
     public void setStatus(ReservationStatus status) {
         this.status = status;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
     }
 }

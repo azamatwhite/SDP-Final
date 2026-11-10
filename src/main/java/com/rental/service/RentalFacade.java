@@ -9,9 +9,12 @@ import com.rental.repo.VehicleRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 public class RentalFacade {
     private final VehicleRepository vehicleRepository;
@@ -41,8 +44,68 @@ public class RentalFacade {
         return vehicleRepository.findAll();
     }
 
-    public List<Vehicle> getAvailableVehicles() {
-        return vehicleRepository.findAll().stream().filter(Vehicle::isAvailable).toList();
+    public List<Vehicle> findVehicles(String search, String type, String sort) {
+        Stream<Vehicle> stream = vehicleRepository.findAll().stream();
+
+        // 1. Filter by category
+        if (type != null && !type.isBlank() && !"ALL".equalsIgnoreCase(type.trim())) {
+            stream = stream.filter(v -> v.getType().name().equalsIgnoreCase(type.trim()));
+        }
+
+        // 2. Filter by search query (brand or model)
+        if (search != null && !search.isBlank()) {
+            String q = search.trim().toLowerCase();
+            stream = stream.filter(v ->
+                    (v.getBrand() != null && v.getBrand().toLowerCase().contains(q)) ||
+                    (v.getModel() != null && v.getModel().toLowerCase().contains(q)));
+        }
+
+        // 3. Sort
+        if ("priceAsc".equalsIgnoreCase(sort)) {
+            stream = stream.sorted(Comparator.comparing(Vehicle::getDailyRate));
+        } else if ("priceDesc".equalsIgnoreCase(sort)) {
+            stream = stream.sorted(Comparator.comparing(Vehicle::getDailyRate).reversed());
+        } else if ("seats".equalsIgnoreCase(sort)) {
+            stream = stream.sorted(Comparator.comparingInt(Vehicle::getSeats).reversed());
+        }
+
+        return stream.toList();
+    }
+
+    public boolean isVehicleAvailableForDates(String vehicleId, LocalDate start, LocalDate end) {
+        if (start == null) start = LocalDate.now();
+        if (end == null) end = start.plusDays(1);
+        if (!end.isAfter(start)) {
+            throw new IllegalArgumentException("Return date must be after pickup date");
+        }
+        Vehicle vehicle = findVehicle(vehicleId);
+
+        // Check if any active reservation overlaps requested date window [start, end)
+        for (Reservation r : reservationRepository.findAll()) {
+            if (r.getVehicleId().equals(vehicleId) && r.getStatus() == ReservationStatus.ACTIVE) {
+                LocalDate rStart = r.getStartDate() != null ? r.getStartDate() : LocalDate.now();
+                LocalDate rEnd = r.getEndDate() != null ? r.getEndDate() : rStart.plusDays(Math.max(1, r.getRentalDays()));
+                if (start.isBefore(rEnd) && end.isAfter(rStart)) {
+                    return false;
+                }
+            }
+        }
+
+        // If vehicle is marked unavailable, check whether it is due to an active reservation today or manual deactivation
+        if (!vehicle.isAvailable()) {
+            boolean activeReservationToday = reservationRepository.findAll().stream()
+                    .filter(r -> r.getVehicleId().equals(vehicleId) && r.getStatus() == ReservationStatus.ACTIVE)
+                    .anyMatch(r -> {
+                        LocalDate rs = r.getStartDate() != null ? r.getStartDate() : LocalDate.now();
+                        LocalDate re = r.getEndDate() != null ? r.getEndDate() : rs.plusDays(Math.max(1, r.getRentalDays()));
+                        return !LocalDate.now().isBefore(rs) && LocalDate.now().isBefore(re);
+                    });
+            if (!activeReservationToday) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public List<Reservation> getReservations() {
@@ -69,13 +132,28 @@ public class RentalFacade {
     // The Facade coordinates availability, pricing, payment, reservation, and confirmation.
     public Reservation checkout(String vehicleId, int rentalDays, String customerId, String email,
                                 String pricing, Collection<String> extras) {
+        return checkout(vehicleId, rentalDays, customerId, email, pricing, extras, null, null);
+    }
+
+    public Reservation checkout(String vehicleId, int rentalDays, String customerId, String email,
+                                String pricing, Collection<String> extras,
+                                LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null) {
+            if (!endDate.isAfter(startDate)) {
+                throw new IllegalArgumentException("Return date must be after pickup date");
+            }
+            rentalDays = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+        }
         validateRentalDays(rentalDays);
         requireText(customerId, "Customer ID");
         requireText(email, "Email");
 
         synchronized (lock) {
             Vehicle vehicle = findVehicle(vehicleId);
-            if (!vehicle.isAvailable()) {
+            LocalDate start = startDate != null ? startDate : LocalDate.now();
+            LocalDate end = endDate != null ? endDate : start.plusDays(rentalDays);
+
+            if (!isVehicleAvailableForDates(vehicleId, start, end)) {
                 throw new VehicleUnavailableException(vehicleId);
             }
 
@@ -85,12 +163,21 @@ public class RentalFacade {
             }
 
             Reservation reservation = new Reservation(
-                    UUID.randomUUID().toString(), vehicleId, customerId, email, rentalDays, total);
+                    UUID.randomUUID().toString(), vehicleId, customerId, email, rentalDays, total,
+                    ReservationStatus.ACTIVE, start, end);
             reservationRepository.save(reservation);
-            vehicle.setAvailable(false);
-            vehicleRepository.save(vehicle);
+
+            LocalDate today = LocalDate.now();
+            if (!today.isBefore(start) && today.isBefore(end)) {
+                vehicle.setAvailable(false);
+                vehicleRepository.save(vehicle);
+            } else if (start.isEqual(today)) {
+                vehicle.setAvailable(false);
+                vehicleRepository.save(vehicle);
+            }
+
             notificationService.send(email, "Booking confirmed. Reservation " + reservation.getId()
-                    + " total: $" + total.toPlainString());
+                    + " total: " + total.toPlainString() + " KZT");
             return reservation;
         }
     }
@@ -113,8 +200,18 @@ public class RentalFacade {
             reservation.setStatus(status);
             reservationRepository.save(reservation);
             vehicleRepository.findById(reservation.getVehicleId()).ifPresent(v -> {
-                v.setAvailable(true);
-                vehicleRepository.save(v);
+                LocalDate today = LocalDate.now();
+                boolean busyToday = reservationRepository.findAll().stream()
+                        .filter(r -> r.getVehicleId().equals(v.getId()) && r.getStatus() == ReservationStatus.ACTIVE)
+                        .anyMatch(r -> {
+                            LocalDate rs = r.getStartDate() != null ? r.getStartDate() : today;
+                            LocalDate re = r.getEndDate() != null ? r.getEndDate() : rs.plusDays(Math.max(1, r.getRentalDays()));
+                            return !today.isBefore(rs) && today.isBefore(re);
+                        });
+                if (!busyToday) {
+                    v.setAvailable(true);
+                    vehicleRepository.save(v);
+                }
             });
             return reservation;
         }
