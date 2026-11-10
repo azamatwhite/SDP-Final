@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,14 +48,69 @@ public class RentalController implements HttpHandler {
             String[] seg = path.split("/"); // ["", "api", "reservations", "{id}", "cancel"]
 
             if ("GET".equals(method) && "/api/vehicles".equals(path)) {
-                send(exchange, 200, gson.toJson(rentalFacade.getAllVehicles()));
+                Map<String, String> queryParams = parseQuery(exchange.getRequestURI().getQuery());
+                String search = queryParams.get("search");
+                String type = queryParams.get("type");
+                String sort = queryParams.get("sort");
+                String startStr = queryParams.get("startDate");
+                String endStr = queryParams.get("endDate");
+
+                LocalDate start = (startStr != null && !startStr.isBlank()) ? LocalDate.parse(startStr.trim()) : LocalDate.now();
+                LocalDate end = (endStr != null && !endStr.isBlank()) ? LocalDate.parse(endStr.trim()) : start.plusDays(1);
+                if (!end.isAfter(start)) {
+                    end = start.plusDays(1);
+                }
+
+                final LocalDate effectiveStart = start;
+                final LocalDate effectiveEnd = end;
+
+                List<Map<String, Object>> list = new ArrayList<>();
+                for (Vehicle v : rentalFacade.findVehicles(search, type, sort)) {
+                    boolean available = rentalFacade.isVehicleAvailableForDates(v.getId(), effectiveStart, effectiveEnd);
+
+                    Reservation conflict = rentalFacade.getReservations().stream()
+                            .filter(r -> r.getVehicleId().equals(v.getId()) && r.getStatus().name().equals("ACTIVE"))
+                            .filter(r -> {
+                                LocalDate rs = r.getStartDate() != null ? r.getStartDate() : LocalDate.now();
+                                LocalDate re = r.getEndDate() != null ? r.getEndDate() : rs.plusDays(Math.max(1, r.getRentalDays()));
+                                return effectiveStart.isBefore(re) && effectiveEnd.isAfter(rs);
+                            })
+                            .findFirst().orElse(null);
+
+                    Map<String, Object> vm = new LinkedHashMap<>();
+                    vm.put("id", v.getId());
+                    vm.put("type", v.getType().name());
+                    vm.put("brand", v.getBrand());
+                    vm.put("model", v.getModel());
+                    vm.put("seats", v.getSeats());
+                    vm.put("fuel", v.getFuel());
+                    vm.put("dailyRate", v.getDailyRate());
+                    vm.put("available", available);
+                    vm.put("rentedUntil", conflict != null ? conflict.getEndDate().toString() : null);
+                    vm.put("rentedDates", conflict != null ? (conflict.getStartDate() + " to " + conflict.getEndDate()) : null);
+                    list.add(vm);
+                }
+                send(exchange, 200, gson.toJson(list));
             } else if ("POST".equals(method) && "/api/vehicles".equals(path)) {
                 Vehicle vehicle = vehicleRepository.save(createVehicle(readForm(exchange)));
                 send(exchange, 201, gson.toJson(vehicle));
             } else if ("POST".equals(method) && "/api/quote".equals(path)) {
                 Map<String, String> form = readForm(exchange);
+                String startStr = form.get("startDate");
+                String endStr = form.get("endDate");
+                int rentalDays;
+                if (startStr != null && !startStr.isBlank() && endStr != null && !endStr.isBlank()) {
+                    LocalDate start = LocalDate.parse(startStr.trim());
+                    LocalDate end = LocalDate.parse(endStr.trim());
+                    if (!end.isAfter(start)) {
+                        throw new IllegalArgumentException("Return date must be after pickup date");
+                    }
+                    rentalDays = (int) java.time.temporal.ChronoUnit.DAYS.between(start, end);
+                } else {
+                    rentalDays = Integer.parseInt(required(form, "rentalDays"));
+                }
                 Quote quote = rentalFacade.buildQuote(required(form, "vehicleId"),
-                        Integer.parseInt(required(form, "rentalDays")),
+                        rentalDays,
                         form.get("pricing"), extras(form));
                 Map<String, Object> body = new LinkedHashMap<>();
                 body.put("totalPrice", RentalFacade.price(quote));
@@ -62,10 +118,25 @@ public class RentalController implements HttpHandler {
                 send(exchange, 200, gson.toJson(body));
             } else if ("POST".equals(method) && "/api/checkout".equals(path)) {
                 Map<String, String> form = readForm(exchange);
+                String startStr = form.get("startDate");
+                String endStr = form.get("endDate");
+                LocalDate start = (startStr != null && !startStr.isBlank()) ? LocalDate.parse(startStr.trim()) : null;
+                LocalDate end = (endStr != null && !endStr.isBlank()) ? LocalDate.parse(endStr.trim()) : null;
+
+                int rentalDays;
+                if (start != null && end != null) {
+                    if (!end.isAfter(start)) {
+                        throw new IllegalArgumentException("Return date must be after pickup date");
+                    }
+                    rentalDays = (int) java.time.temporal.ChronoUnit.DAYS.between(start, end);
+                } else {
+                    rentalDays = Integer.parseInt(required(form, "rentalDays"));
+                }
+
                 Reservation r = rentalFacade.checkout(required(form, "vehicleId"),
-                        Integer.parseInt(required(form, "rentalDays")),
+                        rentalDays,
                         required(form, "customerId"), required(form, "email"),
-                        form.get("pricing"), extras(form));
+                        form.get("pricing"), extras(form), start, end);
                 send(exchange, 201, gson.toJson(view(r)));
             } else if ("GET".equals(method) && "/api/reservations".equals(path)) {
                 List<Map<String, Object>> list = new ArrayList<>();
@@ -105,6 +176,8 @@ public class RentalController implements HttpHandler {
         m.put("vehicleId", r.getVehicleId());
         m.put("email", r.getEmail());
         m.put("rentalDays", r.getRentalDays());
+        m.put("startDate", r.getStartDate() != null ? r.getStartDate().toString() : "");
+        m.put("endDate", r.getEndDate() != null ? r.getEndDate().toString() : "");
         m.put("totalPrice", r.getTotalPrice());
         m.put("status", r.getStatus().name());
         return m;
@@ -149,6 +222,20 @@ public class RentalController implements HttpHandler {
 
     private String errorJson(String message) {
         return gson.toJson(Map.of("error", message == null ? "Error" : message));
+    }
+
+    private Map<String, String> parseQuery(String query) {
+        Map<String, String> params = new HashMap<>();
+        if (query == null || query.isBlank()) {
+            return params;
+        }
+        for (String pair : query.split("&")) {
+            String[] parts = pair.split("=", 2);
+            String key = URLDecoder.decode(parts[0], StandardCharsets.UTF_8);
+            String val = parts.length > 1 ? URLDecoder.decode(parts[1], StandardCharsets.UTF_8) : "";
+            params.put(key, val);
+        }
+        return params;
     }
 
     private void send(HttpExchange exchange, int status, String body) throws IOException {

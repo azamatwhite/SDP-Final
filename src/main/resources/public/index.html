@@ -23,7 +23,9 @@
 
     <section id="tab-catalog">
         <div class="row g-2 mb-3">
-            <div class="col-md-4"><input id="search" class="form-control" placeholder="Search brand or model"></div>
+            <div class="col-md-4">
+                <input id="search" class="form-control" placeholder="Search brand or model">
+            </div>
             <div class="col-md-3">
                 <select id="sort" class="form-select">
                     <option value="default">Sort: default</option>
@@ -41,39 +43,70 @@
                 </div>
             </div>
         </div>
-        <div id="vehicle-grid" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3"></div>
+
+        <div id="vehicle-grid" class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3"></div>
 
         <h2 class="h4 mt-5 mb-3">Reserve a vehicle</h2>
         <div class="card p-3">
             <p id="selected-label" class="text-muted">No vehicle selected</p>
             <div class="row g-3">
-                <div class="col-md-2">
-                    <label class="form-label" for="rental-days">Days</label>
-                    <input type="number" id="rental-days" class="form-control" min="1" value="1">
+                <div class="col-md-3">
+                    <label class="form-label" for="pickup-date">Pickup date</label>
+                    <input type="date" id="pickup-date" class="form-control">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="pricing">Pricing</label>
-                    <select id="pricing" class="form-select">
-                        <option value="DAILY">Daily</option>
-                        <option value="WEEKLY_DISCOUNT">Weekly discount (-15% from 7 days)</option>
-                    </select>
+                    <label class="form-label" for="return-date">Return date</label>
+                    <input type="date" id="return-date" class="form-control">
+                    <div class="form-text" id="duration-info">1 day(s)</div>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">Extras</label><br>
-                    <div class="form-check form-check-inline"><input class="form-check-input extra" type="checkbox" value="GPS" id="x1"><label class="form-check-label" for="x1">GPS +$50</label></div>
-                    <div class="form-check form-check-inline"><input class="form-check-input extra" type="checkbox" value="CHILD_SEAT" id="x2"><label class="form-check-label" for="x2">Child seat +$30</label></div>
-                    <div class="form-check form-check-inline"><input class="form-check-input extra" type="checkbox" value="INSURANCE" id="x3"><label class="form-check-label" for="x3">Insurance +10%</label></div>
+                <div class="col-md-3">
+                    <label class="form-label" for="promo-code">Promo code (optional)</label>
+                    <input type="text" id="promo-code" class="form-control" placeholder="ASTANA-IT or CORP10">
+                    <div class="form-text">ASTANA-IT: -20% student discount | CORP10: -10% corporate</div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label" for="customer-email">Confirmation email</label>
-                    <input type="email" id="customer-email" class="form-control">
+                    <input type="email" id="customer-email" class="form-control" placeholder="renter@example.com" value="renter@example.com">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="customer-id">Payment token</label>
-                    <input type="text" id="customer-id" class="form-control" value="demo-card-token">
-                    <div class="form-text">Use "declined" to simulate a failed payment.</div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Extras</label><br>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input extra" type="checkbox" value="HELMET" id="x1">
+                        <label class="form-check-label" for="x1" id="label-x1">Protective Helmet +1,000 KZT</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input extra" type="checkbox" value="CHILD_SEAT" id="x2">
+                        <label class="form-check-label" for="x2" id="label-x2">Child seat +2,000 KZT</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input extra" type="checkbox" value="INSURANCE" id="x3">
+                        <label class="form-check-label" for="x3">Insurance +10%</label>
+                    </div>
                 </div>
-                <div class="col-md-4 d-flex align-items-end gap-2">
+
+                <div class="col-md-12 border-top pt-3">
+                    <label class="form-label fw-semibold">Payment card</label>
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <input type="text" id="card-number" class="form-control" placeholder="Card number (e.g. 4400 1234 5678 9012)" value="4400 1234 5678 9012" maxlength="19">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="text" id="card-expiry" class="form-control" placeholder="MM/YY" value="12/28" maxlength="5">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="password" id="card-cvv" class="form-control" placeholder="CVV" value="777" maxlength="3">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-center">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="simulate-decline">
+                                <label class="form-check-label text-danger" for="simulate-decline">Simulate declined payment</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 d-flex align-items-center gap-2 mt-3">
                     <button id="quote-button" class="btn btn-outline-primary">Get quote</button>
                     <button id="checkout-button" class="btn btn-primary">Reserve</button>
                 </div>
@@ -86,7 +119,18 @@
         <h2 class="h4 mb-3">Reservations</h2>
         <div class="table-responsive">
             <table class="table align-middle">
-                <thead><tr><th>ID</th><th>Vehicle</th><th>Email</th><th>Days</th><th>Total</th><th>Status</th><th></th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Vehicle</th>
+                        <th>Email</th>
+                        <th>Rental dates</th>
+                        <th>Days</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
                 <tbody id="reservation-body"></tbody>
             </table>
         </div>
@@ -98,14 +142,37 @@
         <div class="card p-3">
             <form id="add-vehicle-form">
                 <div class="row g-3">
-                    <div class="col-md-4"><label class="form-label" for="vehicle-type">Type</label>
-                        <select id="vehicle-type" class="form-select"><option>CAR</option><option>MOTORCYCLE</option><option>SCOOTER</option></select></div>
-                    <div class="col-md-4"><label class="form-label" for="vehicle-brand">Brand</label><input id="vehicle-brand" class="form-control" required></div>
-                    <div class="col-md-4"><label class="form-label" for="vehicle-model">Model</label><input id="vehicle-model" class="form-control" required></div>
-                    <div class="col-md-4"><label class="form-label" for="vehicle-seats">Seats</label><input type="number" id="vehicle-seats" class="form-control" min="1" required></div>
-                    <div class="col-md-4"><label class="form-label" for="vehicle-fuel">Fuel</label><input id="vehicle-fuel" class="form-control" required></div>
-                    <div class="col-md-4"><label class="form-label" for="vehicle-rate">Daily rate</label><input type="number" id="vehicle-rate" class="form-control" min="0.01" step="0.01" required></div>
-                    <div class="col-12"><button type="submit" class="btn btn-primary">Add vehicle</button></div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="vehicle-type">Type</label>
+                        <select id="vehicle-type" class="form-select">
+                            <option>CAR</option>
+                            <option>MOTORCYCLE</option>
+                            <option>SCOOTER</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="vehicle-brand">Brand</label>
+                        <input id="vehicle-brand" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="vehicle-model">Model</label>
+                        <input id="vehicle-model" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="vehicle-seats">Seats</label>
+                        <input type="number" id="vehicle-seats" class="form-control" min="1" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="vehicle-fuel">Fuel</label>
+                        <input id="vehicle-fuel" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="vehicle-rate">Daily rate (KZT)</label>
+                        <input type="number" id="vehicle-rate" class="form-control" min="1" step="100" required>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Add vehicle</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -113,7 +180,16 @@
 </div>
 
 <script>
-    const state = { vehicles: [], reservations: [], filter: "ALL", search: "", sort: "default", selected: null };
+    const state = {
+        vehicles: [],
+        reservations: [],
+        filter: "ALL",
+        search: "",
+        sort: "default",
+        selected: null,
+        rentalDays: 1
+    };
+
     const $ = id => document.getElementById(id);
 
     function el(tag, cls, text) {
@@ -121,6 +197,10 @@
         if (cls) e.className = cls;
         if (text !== undefined) e.textContent = text;
         return e;
+    }
+
+    function formatKzt(val) {
+        return Number(val).toLocaleString('en-US') + " KZT";
     }
 
     async function api(path, method = "GET", params) {
@@ -149,47 +229,80 @@
 
     function vehicleName(v) { return v.brand + " " + v.model; }
 
-    function visibleVehicles() {
-        const q = state.search.toLowerCase();
-        const list = state.vehicles.filter(v =>
-            (state.filter === "ALL" || v.type === state.filter) &&
-            vehicleName(v).toLowerCase().includes(q));
-        if (state.sort === "priceAsc") list.sort((a, b) => a.dailyRate - b.dailyRate);
-        if (state.sort === "priceDesc") list.sort((a, b) => b.dailyRate - a.dailyRate);
-        if (state.sort === "seats") list.sort((a, b) => b.seats - a.seats);
-        return list;
-    }
-
     function renderVehicles() {
         const grid = $("vehicle-grid");
         grid.textContent = "";
-        visibleVehicles().forEach(v => {
+        state.vehicles.forEach(v => {
             const col = el("div", "col");
             const card = el("div", "card h-100" + (state.selected === v.id ? " border-primary" : ""));
             const body = el("div", "card-body d-flex flex-column");
             const head = el("div", "d-flex justify-content-between align-items-start mb-2");
             head.appendChild(el("h5", "card-title mb-0", vehicleName(v)));
-            head.appendChild(el("span", "badge " + (v.available ? "bg-success" : "bg-secondary"),
-                v.available ? "Available" : "Rented"));
+
+            const statusText = v.available ? "Available" : (v.rentedDates ? ("Rented: " + v.rentedDates) : (v.rentedUntil ? ("Rented until " + v.rentedUntil) : "Rented"));
+            head.appendChild(el("span", "badge " + (v.available ? "bg-success" : "bg-secondary"), statusText));
             body.appendChild(head);
+
             body.appendChild(el("p", "mb-1 text-muted", v.type));
             body.appendChild(el("p", "mb-1", "Seats: " + v.seats));
             body.appendChild(el("p", "mb-1", "Fuel: " + v.fuel));
-            body.appendChild(el("p", "fw-bold text-primary mb-3", "$" + Number(v.dailyRate).toFixed(2) + " / day"));
+            body.appendChild(el("p", "fw-bold text-primary mb-3", formatKzt(v.dailyRate) + " / day"));
+
             const btn = el("button", "btn w-100 mt-auto " + (state.selected === v.id ? "btn-primary" : "btn-outline-primary"),
                 state.selected === v.id ? "Selected" : "Select");
             btn.disabled = !v.available;
-            btn.addEventListener("click", () => { state.selected = v.id; renderVehicles(); renderSelected(); });
+            btn.addEventListener("click", () => {
+                state.selected = v.id;
+                renderVehicles();
+                renderSelected();
+            });
             body.appendChild(btn);
+
             card.appendChild(body);
             col.appendChild(card);
             grid.appendChild(col);
         });
+
+        if (state.selected) {
+            const cur = state.vehicles.find(x => x.id === state.selected);
+            if (cur && !cur.available) {
+                state.selected = null;
+                renderSelected();
+            }
+        }
     }
 
     function renderSelected() {
         const v = state.vehicles.find(x => x.id === state.selected);
-        $("selected-label").textContent = v ? "Selected: " + vehicleName(v) : "No vehicle selected";
+        $("selected-label").textContent = v ? "Selected: " + vehicleName(v) + " (" + formatKzt(v.dailyRate) + " / day)" : "No vehicle selected";
+
+        const helmetCheck = $("x1");
+        const seatCheck = $("x2");
+        const helmetLabel = $("label-x1");
+        const seatLabel = $("label-x2");
+
+        if (v) {
+            if (v.type === "CAR") {
+                helmetCheck.checked = false;
+                helmetCheck.disabled = true;
+                helmetLabel.textContent = "Helmet (moto & scooters only)";
+
+                seatCheck.disabled = false;
+                seatLabel.textContent = "Child seat +2,000 KZT";
+            } else {
+                helmetCheck.disabled = false;
+                helmetLabel.textContent = "Protective Helmet +1,000 KZT";
+
+                seatCheck.checked = false;
+                seatCheck.disabled = true;
+                seatLabel.textContent = "Child seat (cars only)";
+            }
+        } else {
+            helmetCheck.disabled = false;
+            helmetLabel.textContent = "Protective Helmet +1,000 KZT";
+            seatCheck.disabled = false;
+            seatLabel.textContent = "Child seat +2,000 KZT";
+        }
     }
 
     function renderReservations() {
@@ -202,17 +315,26 @@
             tr.appendChild(el("td", null, r.id.substring(0, 8)));
             tr.appendChild(el("td", null, v ? vehicleName(v) : r.vehicleId));
             tr.appendChild(el("td", null, r.email));
+
+            const datesText = (r.startDate && r.endDate) ? (r.startDate + " to " + r.endDate) : "-";
+            tr.appendChild(el("td", null, datesText));
+
             tr.appendChild(el("td", null, String(r.rentalDays)));
-            tr.appendChild(el("td", null, "$" + Number(r.totalPrice).toFixed(2)));
+            tr.appendChild(el("td", null, formatKzt(r.totalPrice)));
+
             const colors = { ACTIVE: "bg-primary", CANCELLED: "bg-secondary", COMPLETED: "bg-success" };
-            const st = el("td"); st.appendChild(el("span", "badge " + colors[r.status], r.status)); tr.appendChild(st);
+            const st = el("td");
+            st.appendChild(el("span", "badge " + colors[r.status], r.status));
+            tr.appendChild(st);
+
             const actions = el("td", "text-end");
             if (r.status === "ACTIVE") {
                 const done = el("button", "btn btn-sm btn-success me-1", "Return");
                 done.addEventListener("click", () => act(r.id, "complete"));
                 const cancel = el("button", "btn btn-sm btn-outline-danger", "Cancel");
                 cancel.addEventListener("click", () => act(r.id, "cancel"));
-                actions.appendChild(done); actions.appendChild(cancel);
+                actions.appendChild(done);
+                actions.appendChild(cancel);
             }
             tr.appendChild(actions);
             body.appendChild(tr);
@@ -224,62 +346,160 @@
             await api("/api/reservations/" + id + "/" + action, "POST", {});
             showAlert("Reservation " + (action === "cancel" ? "cancelled" : "completed"), "success");
             await refresh();
-        } catch (e) { showAlert(e.message, "danger"); }
+        } catch (e) {
+            showAlert(e.message, "danger");
+        }
+    }
+
+    async function fetchVehicles() {
+        const params = new URLSearchParams();
+        if (state.search) params.set("search", state.search);
+        if (state.filter && state.filter !== "ALL") params.set("type", state.filter);
+        if (state.sort && state.sort !== "default") params.set("sort", state.sort);
+
+        const pickup = $("pickup-date") ? $("pickup-date").value : null;
+        const returnD = $("return-date") ? $("return-date").value : null;
+        if (pickup) params.set("startDate", pickup);
+        if (returnD) params.set("endDate", returnD);
+
+        const qs = params.toString();
+        state.vehicles = await api("/api/vehicles" + (qs ? "?" + qs : ""));
+        renderVehicles();
+        renderSelected();
     }
 
     async function refresh() {
-        state.vehicles = await api("/api/vehicles");
+        await fetchVehicles();
         state.reservations = await api("/api/reservations");
-        renderVehicles(); renderSelected(); renderReservations();
+        renderReservations();
     }
 
+    function initDates() {
+        const today = new Date();
+        const tomorrow = new Date();
+        tomorrow.setDate(today.getDate() + 1);
+
+        const formatDate = d => d.toISOString().split('T')[0];
+        const todayStr = formatDate(today);
+        const tomorrowStr = formatDate(tomorrow);
+
+        $("pickup-date").min = todayStr;
+        $("pickup-date").value = todayStr;
+        $("return-date").min = tomorrowStr;
+        $("return-date").value = tomorrowStr;
+
+        updateRentalDays();
+    }
+
+    function onPickupChange() {
+        const pickupStr = $("pickup-date").value;
+        if (!pickupStr) return;
+        const p = new Date(pickupStr);
+        const minReturn = new Date(p);
+        minReturn.setDate(p.getDate() + 1);
+        const minReturnStr = minReturn.toISOString().split('T')[0];
+        $("return-date").min = minReturnStr;
+
+        const r = new Date($("return-date").value);
+        if (isNaN(r.getTime()) || r <= p) {
+            $("return-date").value = minReturnStr;
+        }
+        updateRentalDays();
+        fetchVehicles();
+    }
+
+    function onReturnChange() {
+        const p = new Date($("pickup-date").value);
+        const r = new Date($("return-date").value);
+        if (r <= p) {
+            showAlert("Return date must be after pickup date", "warning");
+            const minReturn = new Date(p);
+            minReturn.setDate(p.getDate() + 1);
+            $("return-date").value = minReturn.toISOString().split('T')[0];
+        }
+        updateRentalDays();
+        fetchVehicles();
+    }
+
+    function updateRentalDays() {
+        const p = new Date($("pickup-date").value);
+        const r = new Date($("return-date").value);
+        let days = Math.round((r - p) / (1000 * 60 * 60 * 24));
+        if (isNaN(days) || days < 1) days = 1;
+        state.rentalDays = days;
+        $("duration-info").textContent = days + " day(s)";
+    }
+
+    $("pickup-date").addEventListener("change", onPickupChange);
+    $("return-date").addEventListener("change", onReturnChange);
+
     function orderData() {
+        const pickup = $("pickup-date").value;
+        const returnD = $("return-date").value;
+        if (!pickup || !returnD) {
+            throw new Error("Please select valid pickup and return dates");
+        }
+        const p = new Date(pickup);
+        const r = new Date(returnD);
+        if (r <= p) {
+            throw new Error("Return date must be after pickup date");
+        }
+
+        const isDecline = $("simulate-decline").checked;
+        const cardNum = $("card-number").value.replace(/\s+/g, '');
+        const customerId = isDecline ? "declined" : ("card-" + (cardNum.slice(-4) || "0000"));
+
         return {
             vehicleId: state.selected || "",
-            rentalDays: $("rental-days").value,
-            pricing: $("pricing").value,
+            rentalDays: state.rentalDays || 1,
+            startDate: pickup,
+            endDate: returnD,
+            pricing: $("promo-code").value.trim(),
             extras: Array.from(document.querySelectorAll(".extra:checked")).map(c => c.value).join(","),
-            customerId: $("customer-id").value.trim(),
+            customerId: customerId,
             email: $("customer-email").value.trim()
         };
     }
 
     $("quote-button").addEventListener("click", async () => {
-        const d = orderData();
-        if (!d.vehicleId) return showAlert("Select an available vehicle first", "warning");
         try {
+            const d = orderData();
+            if (!d.vehicleId) return showAlert("Select an available vehicle first", "warning");
             const r = await api("/api/quote", "POST", d);
             const box = $("quote-result");
             box.textContent = "";
             const ul = el("ul", "mb-1");
             r.lines.forEach(l => ul.appendChild(el("li", null, l)));
             box.appendChild(ul);
-            box.appendChild(el("strong", null, "Total: $" + Number(r.totalPrice).toFixed(2)));
-        } catch (e) { showAlert(e.message, "danger"); }
+            box.appendChild(el("strong", null, "Total: " + formatKzt(r.totalPrice)));
+        } catch (e) {
+            showAlert(e.message, "danger");
+        }
     });
 
     $("checkout-button").addEventListener("click", async () => {
-        const d = orderData();
-        if (!d.vehicleId) return showAlert("Select an available vehicle first", "warning");
         try {
+            const d = orderData();
+            if (!d.vehicleId) return showAlert("Select an available vehicle first", "warning");
             const r = await api("/api/checkout", "POST", d);
             $("quote-result").textContent = "";
-            showAlert("Booking confirmed. Reservation " + r.id.substring(0, 8) + ", total $" +
-                Number(r.totalPrice).toFixed(2), "success");
+            showAlert("Booking confirmed. Reservation " + r.id.substring(0, 8) + ", total " + formatKzt(r.totalPrice), "success");
             state.selected = null;
             await refresh();
-        } catch (e) { showAlert(e.message, "danger"); }
+        } catch (e) {
+            showAlert(e.message, "danger");
+        }
     });
 
-    $("search").addEventListener("input", e => { state.search = e.target.value; renderVehicles(); });
-    $("sort").addEventListener("change", e => { state.sort = e.target.value; renderVehicles(); });
+    $("search").addEventListener("input", e => { state.search = e.target.value; fetchVehicles(); });
+    $("sort").addEventListener("change", e => { state.sort = e.target.value; fetchVehicles(); });
 
     $("filter-group").addEventListener("click", e => {
         if (e.target.tagName !== "BUTTON") return;
         document.querySelectorAll("#filter-group button").forEach(b => b.classList.remove("active"));
         e.target.classList.add("active");
         state.filter = e.target.dataset.filter;
-        renderVehicles();
+        fetchVehicles();
     });
 
     $("tabs").addEventListener("click", e => {
@@ -293,16 +513,23 @@
         e.preventDefault();
         try {
             await api("/api/vehicles", "POST", {
-                type: $("vehicle-type").value, brand: $("vehicle-brand").value.trim(),
-                model: $("vehicle-model").value.trim(), seats: $("vehicle-seats").value,
-                fuel: $("vehicle-fuel").value.trim(), dailyRate: $("vehicle-rate").value
+                type: $("vehicle-type").value,
+                brand: $("vehicle-brand").value.trim(),
+                model: $("vehicle-model").value.trim(),
+                seats: $("vehicle-seats").value,
+                fuel: $("vehicle-fuel").value.trim(),
+                dailyRate: $("vehicle-rate").value
             });
             showAlert("Vehicle added", "success");
             e.target.reset();
             await refresh();
-        } catch (err) { showAlert(err.message, "danger"); }
+            document.querySelector("[data-tab='catalog']").click();
+        } catch (err) {
+            showAlert(err.message, "danger");
+        }
     });
 
+    initDates();
     refresh().catch(e => showAlert(e.message, "danger"));
 </script>
 </body>
