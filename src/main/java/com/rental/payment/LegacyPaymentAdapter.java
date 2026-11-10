@@ -22,7 +22,7 @@ public class LegacyPaymentAdapter implements PaymentGateway {
         if (amount == null || amount.signum() <= 0) {
             throw new IllegalArgumentException("Payment amount must be greater than 0");
         }
-        long cents = amount.setScale(2, RoundingMode.UNNECESSARY)
+        long cents = amount.setScale(2, RoundingMode.HALF_UP)
                 .movePointRight(2)
                 .longValueExact();
         return legacyProcessor.makePayment(customerId, cents, "KZT");

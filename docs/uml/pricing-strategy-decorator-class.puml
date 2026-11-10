@@ -1,0 +1,83 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package "Strategy Pattern (Base Pricing)" {
+  interface PricingStrategy {
+    +code(): String
+    +basePrice(Vehicle, int): BigDecimal
+  }
+
+  class DailyPricing implements PricingStrategy {
+    +code(): String
+    +basePrice(Vehicle, int): BigDecimal
+  }
+
+  class WeeklyDiscountPricing implements PricingStrategy {
+    +code(): String
+    +basePrice(Vehicle, int): BigDecimal
+  }
+
+  class MonthlySubscriptionPricing implements PricingStrategy {
+    +code(): String
+    +basePrice(Vehicle, int): BigDecimal
+  }
+
+  class StudentPricing implements PricingStrategy {
+    +code(): String
+    +basePrice(Vehicle, int): BigDecimal
+  }
+
+  class CorporatePricing implements PricingStrategy {
+    +code(): String
+    +basePrice(Vehicle, int): BigDecimal
+  }
+}
+
+package "Decorator Pattern (Extras & Add-ons)" {
+  interface Quote {
+    +total(): BigDecimal
+    +lines(): List<String>
+  }
+
+  class BaseQuote implements Quote {
+    -baseAmount: BigDecimal
+    -description: String
+    +total(): BigDecimal
+    +lines(): List<String>
+  }
+
+  abstract class QuoteDecorator implements Quote {
+    #wrapped: Quote
+    +total(): BigDecimal
+    +lines(): List<String>
+  }
+
+  class HelmetDecorator extends QuoteDecorator {
+    -HELMET_PRICE: BigDecimal
+    +total(): BigDecimal
+    +lines(): List<String>
+  }
+
+  class ChildSeatDecorator extends QuoteDecorator {
+    -SEAT_PRICE: BigDecimal
+    +total(): BigDecimal
+    +lines(): List<String>
+  }
+
+  class InsuranceDecorator extends QuoteDecorator {
+    +total(): BigDecimal
+    +lines(): List<String>
+  }
+}
+
+class QuoteService {
+  -strategies: Map<String, PricingStrategy>
+  +build(Vehicle, int, String, Collection<String>): Quote
+  +resolveStrategyCode(int, String): String
+}
+
+QuoteService o--> PricingStrategy : selects & delegates
+QuoteService ..> Quote : produces
+QuoteDecorator o--> Quote : wraps
+
+@enduml

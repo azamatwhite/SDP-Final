@@ -40,10 +40,6 @@ public class RentalFacade {
         this.notificationService = notificationService;
     }
 
-    public List<Vehicle> getAllVehicles() {
-        return vehicleRepository.findAll();
-    }
-
     public List<Vehicle> findVehicles(String search, String type, String sort) {
         Stream<Vehicle> stream = vehicleRepository.findAll().stream();
 

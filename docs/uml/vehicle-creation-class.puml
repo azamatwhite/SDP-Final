@@ -1,0 +1,89 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package "Domain Model" {
+  enum VehicleType {
+    CAR
+    MOTORCYCLE
+    SCOOTER
+  }
+
+  abstract class Vehicle {
+    -id: String
+    -type: VehicleType
+    -brand: String
+    -model: String
+    -seats: int
+    -fuel: String
+    -dailyRate: BigDecimal
+    -available: boolean
+    +builder(): VehicleBuilder
+    +getId(): String
+    +getType(): VehicleType
+    +getBrand(): String
+    +getModel(): String
+    +getSeats(): int
+    +getFuel(): String
+    +getDailyRate(): BigDecimal
+    +isAvailable(): boolean
+    +setAvailable(boolean): void
+  }
+
+  class Car extends Vehicle
+  class Motorcycle extends Vehicle
+  class Scooter extends Vehicle
+}
+
+package "Builder Pattern" {
+  class VehicleBuilder {
+    -id: String
+    -type: VehicleType
+    -brand: String
+    -model: String
+    -seats: int
+    -fuel: String
+    -dailyRate: BigDecimal
+    -available: boolean
+    +id(String): VehicleBuilder
+    +type(VehicleType): VehicleBuilder
+    +brand(String): VehicleBuilder
+    +model(String): VehicleBuilder
+    +seats(int): VehicleBuilder
+    +fuel(String): VehicleBuilder
+    +dailyRate(BigDecimal): VehicleBuilder
+    +available(boolean): VehicleBuilder
+    +build(): Vehicle
+  }
+}
+
+package "Factory Method Pattern" {
+  abstract class VehicleFactory {
+    +createVehicle(String, String, int, String, BigDecimal): Vehicle
+    +{abstract} createVehicle(String, String, String, int, String, BigDecimal, boolean): Vehicle
+  }
+
+  class CarFactory extends VehicleFactory {
+    +createVehicle(String, String, String, int, String, BigDecimal, boolean): Vehicle
+  }
+
+  class MotorcycleFactory extends VehicleFactory {
+    +createVehicle(String, String, String, int, String, BigDecimal, boolean): Vehicle
+  }
+
+  class ScooterFactory extends VehicleFactory {
+    +createVehicle(String, String, String, int, String, BigDecimal, boolean): Vehicle
+  }
+
+  class VehicleFactoryRegistry {
+    -factories: Map<VehicleType, VehicleFactory>
+    +registerFactory(VehicleType, VehicleFactory): void
+    +getFactory(VehicleType): VehicleFactory
+    +create(VehicleType, String, String, int, String, BigDecimal): Vehicle
+  }
+}
+
+VehicleBuilder ..> Vehicle : builds
+Vehicle ..> VehicleBuilder : creates
+VehicleFactory ..> VehicleBuilder : uses
+VehicleFactoryRegistry o--> VehicleFactory : registers
+@enduml

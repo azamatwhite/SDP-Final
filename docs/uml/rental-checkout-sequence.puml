@@ -1,35 +1,58 @@
 @startuml
+autonumber
 actor User
-participant "Web Controller" as Controller
-participant RentalFacade as Facade
-participant "Vehicle Repository" as Vehicles
-participant Vehicle as VehicleEntity
-participant PricingStrategy as Pricing
-participant "LegacyPaymentAdapter (PaymentGateway)" as PaymentAdapter
-participant LegacyPaymentProcessor as LegacyPayment
-participant "Reservation Repository" as Reservations
-participant "EmailClientAdapter (NotificationService)" as NotificationAdapter
-participant LegacyEmailClient as LegacyEmail
+participant "RentalController" as Controller
+participant "RentalFacade" as Facade
+participant "VehicleRepository" as Vehicles
+participant "QuoteService" as Quotes
+participant "PricingStrategy" as Pricing
+participant "LegacyPaymentAdapter" as PaymentAdapter
+participant "LegacyPaymentProcessor" as LegacyPayment
+participant "ReservationRepository" as Reservations
+participant "EmailClientAdapter" as NotificationAdapter
+participant "LegacyEmailClient" as LegacyEmail
 
-User -> Controller: POST /api/checkout
-Controller -> Facade: checkout(vehicleId, days, customer, email)
+User -> Controller: POST /api/checkout (vehicleId, days, customerId, email, dates, extras)
+activate Controller
+
+Controller -> Facade: checkout(vehicleId, days, customerId, email, pricing, extras, startDate, endDate)
+activate Facade
+
 Facade -> Vehicles: findById(vehicleId)
-Vehicles --> Facade: vehicle and availability
-Facade -> VehicleEntity: check available
-VehicleEntity --> Facade: available
-Facade -> Pricing: calculatePrice(vehicle, days)
-Pricing --> Facade: total price
-Facade -> PaymentAdapter: charge(customerId, total)
-PaymentAdapter -> LegacyPayment: makePayment(token, cents, USD)
-LegacyPayment --> PaymentAdapter: approved
-PaymentAdapter --> Facade: approved
+Vehicles --> Facade: vehicle
+
+Facade -> Facade: isVehicleAvailableForDates(vehicleId, start, end)
+
+Facade -> Quotes: build(vehicle, rentalDays, pricing, extras)
+activate Quotes
+Quotes -> Pricing: basePrice(vehicle, rentalDays)
+Pricing --> Quotes: baseAmount
+Quotes -> Quotes: wrap with Decorators (Helmet, ChildSeat, Insurance)
+Quotes --> Facade: quote (totalPrice, lines)
+deactivate Quotes
+
+Facade -> PaymentAdapter: charge(customerId, totalPrice)
+activate PaymentAdapter
+PaymentAdapter -> LegacyPayment: makePayment(token, cents, "KZT")
+activate LegacyPayment
+LegacyPayment --> PaymentAdapter: true (approved)
+deactivate LegacyPayment
+PaymentAdapter --> Facade: true
+deactivate PaymentAdapter
+
 Facade -> Reservations: save(reservation)
 Reservations --> Facade: saved reservation
-Facade -> VehicleEntity: setAvailable(false)
-Facade -> NotificationAdapter: send(email, confirmation)
+
+Facade -> NotificationAdapter: send(email, confirmationMessage)
+activate NotificationAdapter
 NotificationAdapter -> LegacyEmail: sendEmail(email, subject, body)
-LegacyEmail --> NotificationAdapter: sent
-NotificationAdapter --> Facade: sent
-Facade --> Controller: reservation result
-Controller --> User: booking confirmation
+LegacyEmail --> NotificationAdapter: ok
+NotificationAdapter --> Facade: ok
+deactivate NotificationAdapter
+
+Facade --> Controller: reservation
+deactivate Facade
+
+Controller --> User: 201 Created (reservation JSON)
+deactivate Controller
 @enduml

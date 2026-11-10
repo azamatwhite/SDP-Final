@@ -1,28 +1,76 @@
 @startuml
-class RentalController
-class RentalFacade
-interface VehicleRepository
-interface PricingStrategy
-class DailyRatePricingStrategy
-interface ReservationRepository
-class InMemoryReservationRepository
-interface PaymentGateway
-class LegacyPaymentAdapter
-class LegacyPaymentProcessor
-interface NotificationService
-class EmailClientAdapter
-class LegacyEmailClient
+skinparam classAttributeIconSize 0
+
+class RentalController {
+  +handle(HttpExchange): void
+}
+
+class RentalFacade {
+  +findVehicles(String, String, String): List<Vehicle>
+  +isVehicleAvailableForDates(String, LocalDate, LocalDate): boolean
+  +buildQuote(String, int, String, Collection<String>): Quote
+  +quote(String, int): BigDecimal
+  +checkout(String, int, String, String, String, Collection<String>, LocalDate, LocalDate): Reservation
+  +cancel(String): Reservation
+  +complete(String): Reservation
+}
+
+interface VehicleRepository {
+  +findAll(): List<Vehicle>
+  +findById(String): Optional<Vehicle>
+  +save(Vehicle): Vehicle
+}
+
+class InMemoryVehicleRepository implements VehicleRepository
+class JdbcVehicleRepository implements VehicleRepository
+
+interface ReservationRepository {
+  +findAll(): List<Reservation>
+  +findById(String): Optional<Reservation>
+  +save(Reservation): Reservation
+}
+
+class InMemoryReservationRepository implements ReservationRepository
+class JdbcReservationRepository implements ReservationRepository
+
+interface PaymentGateway {
+  +charge(String, BigDecimal): boolean
+}
+
+class LegacyPaymentAdapter implements PaymentGateway {
+  -legacyProcessor: LegacyPaymentProcessor
+  +charge(String, BigDecimal): boolean
+}
+
+class LegacyPaymentProcessor {
+  +makePayment(String, long, String): boolean
+}
+
+interface NotificationService {
+  +send(String, String): void
+}
+
+class EmailClientAdapter implements NotificationService {
+  -legacyEmailClient: LegacyEmailClient
+  +send(String, String): void
+}
+
+class LegacyEmailClient {
+  +sendEmail(String, String, String): void
+}
+
+class QuoteService {
+  +build(Vehicle, int, String, Collection<String>): Quote
+}
 
 RentalController --> RentalFacade
 RentalFacade --> VehicleRepository
-RentalFacade --> PricingStrategy
-RentalFacade --> PaymentGateway
 RentalFacade --> ReservationRepository
+RentalFacade --> QuoteService
+RentalFacade --> PaymentGateway
 RentalFacade --> NotificationService
-DailyRatePricingStrategy ..|> PricingStrategy
-InMemoryReservationRepository ..|> ReservationRepository
-LegacyPaymentAdapter ..|> PaymentGateway
+
 LegacyPaymentAdapter --> LegacyPaymentProcessor
-EmailClientAdapter ..|> NotificationService
 EmailClientAdapter --> LegacyEmailClient
+
 @enduml

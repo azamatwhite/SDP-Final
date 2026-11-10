@@ -4,7 +4,6 @@ import com.rental.domain.Vehicle;
 import com.rental.domain.VehicleType;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -57,9 +56,5 @@ public class VehicleFactoryRegistry {
                           BigDecimal dailyRate,
                           boolean available) {
         return getFactory(type).createVehicle(id, brand, model, seats, fuel, dailyRate, available);
-    }
-
-    public Map<VehicleType, VehicleFactory> getRegisteredFactories() {
-        return Collections.unmodifiableMap(factories);
     }
 }

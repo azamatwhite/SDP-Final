@@ -53,10 +53,10 @@ class RentalFacadeTest {
 
     @Test
     void weeklyDiscountAndExtrasAreApplied() {
-        // 25000 * 7 = 175000 -> 15% off = 148750.00 -> + GPS 3000.00 = 151750.00 -> + insurance 10% = 166925.00
+        // 25000 * 7 = 175000 -> 15% off = 148750.00 -> + Child seat 2000.00 = 150750.00 -> + insurance 10% = 165825.00
         BigDecimal total = RentalFacade.price(rentalFacade.buildQuote(
-                "car-1", 7, "WEEKLY_DISCOUNT", List.of("GPS", "INSURANCE")));
-        assertEquals(new BigDecimal("166925.00"), total);
+                "car-1", 7, "WEEKLY_DISCOUNT", List.of("CHILD_SEAT", "INSURANCE")));
+        assertEquals(new BigDecimal("165825.00"), total);
     }
 
     @Test
@@ -154,7 +154,7 @@ class RentalFacadeTest {
     }
 
     @Test
-    void childSeatAndGpsValidationOnScootersAndMotorcycles() {
+    void childSeatValidationOnScootersAndMotorcycles() {
         Vehicle scooter = new Scooter("scooter-1", "Ninebot", "KickScooter Max", 1, "Electric",
                 new BigDecimal("5000.00"), true);
         vehicleRepository.save(scooter);
@@ -168,10 +168,6 @@ class RentalFacadeTest {
                 () -> rentalFacade.buildQuote("scooter-1", 1, "DAILY", List.of("CHILD_SEAT")));
         assertThrows(IllegalArgumentException.class,
                 () -> rentalFacade.buildQuote("moto-2", 1, "DAILY", List.of("CHILD_SEAT")));
-
-        // GPS is not allowed for scooters
-        assertThrows(IllegalArgumentException.class,
-                () -> rentalFacade.buildQuote("scooter-1", 1, "DAILY", List.of("GPS")));
     }
 
     @Test

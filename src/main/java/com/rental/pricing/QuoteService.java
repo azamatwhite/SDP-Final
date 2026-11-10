@@ -36,13 +36,9 @@ public class QuoteService {
             if (ex.equals("HELMET") && vehicle.getType() == com.rental.domain.VehicleType.CAR) {
                 throw new IllegalArgumentException("Helmet is only available for motorcycles and scooters");
             }
-            if (ex.equals("GPS") && vehicle.getType() == com.rental.domain.VehicleType.SCOOTER) {
-                throw new IllegalArgumentException("GPS navigation is not available for scooters");
-            }
             quote = switch (ex) {
                 case "" -> quote;
                 case "HELMET" -> new HelmetDecorator(quote);
-                case "GPS" -> new GpsDecorator(quote);
                 case "CHILD_SEAT" -> new ChildSeatDecorator(quote);
                 case "INSURANCE" -> new InsuranceDecorator(quote);
                 default -> throw new IllegalArgumentException("Unknown extra: " + extra);
