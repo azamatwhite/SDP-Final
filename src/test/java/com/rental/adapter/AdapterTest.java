@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class AdapterTest {
     @Test
-    void paymentAdapterConvertsDollarsToCentsAndSetsCurrency() {
+    void paymentAdapterConvertsAmountToCentsAndSetsCurrency() {
         RecordingPaymentProcessor processor = new RecordingPaymentProcessor();
         LegacyPaymentAdapter adapter = new LegacyPaymentAdapter(processor);
 
@@ -20,7 +20,7 @@ class AdapterTest {
 
         assertEquals("token-123", processor.cardToken);
         assertEquals(1234L, processor.cents);
-        assertEquals("USD", processor.currency);
+        assertEquals("KZT", processor.currency);
     }
 
     @Test

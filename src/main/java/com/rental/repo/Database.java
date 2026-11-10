@@ -54,8 +54,12 @@ public class Database {
                     rental_days INT NOT NULL,
                     total_price DECIMAL(10,2) NOT NULL,
                     status VARCHAR(20) NOT NULL,
+                    start_date DATE,
+                    end_date DATE,
                     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )""");
+            s.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS start_date DATE");
+            s.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS end_date DATE");
         } catch (SQLException e) {
             throw new IllegalStateException("DB init failed (is Postgres running?)", e);
         }

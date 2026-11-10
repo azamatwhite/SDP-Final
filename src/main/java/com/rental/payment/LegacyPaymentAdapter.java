@@ -25,6 +25,6 @@ public class LegacyPaymentAdapter implements PaymentGateway {
         long cents = amount.setScale(2, RoundingMode.UNNECESSARY)
                 .movePointRight(2)
                 .longValueExact();
-        return legacyProcessor.makePayment(customerId, cents, "USD");
+        return legacyProcessor.makePayment(customerId, cents, "KZT");
     }
 }
