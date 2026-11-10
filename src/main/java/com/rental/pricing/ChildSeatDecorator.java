@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public class ChildSeatDecorator extends QuoteDecorator {
-    private static final BigDecimal SEAT_PRICE = new BigDecimal("30.00");
+    private static final BigDecimal SEAT_PRICE = new BigDecimal("2000.00");
 
     public ChildSeatDecorator(Quote wrapped) {
         super(wrapped);
